@@ -7,16 +7,16 @@ public class MarkdownParser {
         String result = "";
         boolean activeList = false;
 
-        for (int i = 0; i < lines.length; i++) {
+        for (String line : lines) {
 
-            String theLine = ph(lines[i]);
+            String theLine = convertToHeaderTagIfPresent(line);
 
             if (theLine == null) {
-                theLine = li(lines[i]);
+                theLine = convertToListItemTagIfPresent(line);
             }
 
             if (theLine == null) {
-                theLine = p(lines[i]);
+                theLine = convertToParagraphTag(line);
             }
 
             if (theLine.matches("(<li>).*") && !theLine.matches("(<h).*") && !theLine.matches("(<p>).*") && !activeList) {
@@ -39,42 +39,35 @@ public class MarkdownParser {
         return result;
     }
 
-    protected String ph(String markdown) {
+    protected String convertToHeaderTagIfPresent(String markdown) {
         int count = 0;
 
         for (int i = 0; i < markdown.length() && markdown.charAt(i) == '#'; i++) {
             count++;
         }
 
-        if (count == 0) {
-            return null;
-        }
-
-        return "<h" + Integer.toString(count) + ">" + markdown.substring(count + 1) + "</h" + Integer.toString(count) + ">";
+        return count == 0 ? null : "<h" + count + ">" + markdown.substring(count + 1) + "</h" + count + ">";
     }
 
-    public String li(String markdown) {
+    public String convertToListItemTagIfPresent(String markdown) {
         if (markdown.startsWith("*")) {
             String skipAsterisk = markdown.substring(2);
-            String listItemString = parseSomeSymbols(skipAsterisk);
+            String listItemString = convertToItalicAndBoldTag(skipAsterisk);
             return "<li>" + listItemString + "</li>";
         }
 
         return null;
     }
 
-    public String p(String markdown) {
-        return "<p>" + parseSomeSymbols(markdown) + "</p>";
+    public String convertToParagraphTag(String markdown) {
+        return "<p>" + convertToItalicAndBoldTag(markdown) + "</p>";
     }
 
-    public String parseSomeSymbols(String markdown) {
+    public String convertToItalicAndBoldTag(String markdown) {
 
-        String lookingFor = "__(.+)__";
-        String update = "<strong>$1</strong>";
-        String workingOn = markdown.replaceAll(lookingFor, update);
-
-        lookingFor = "_(.+)_";
-        update = "<em>$1</em>";
-        return workingOn.replaceAll(lookingFor, update);
+        String boldMatchRegex = "__(.+)__";
+        String italicMatchRegex = "_(.+)_";
+        String converted = markdown.replaceAll(boldMatchRegex, "<strong>$1</strong>");
+        return converted.replaceAll(italicMatchRegex, "<em>$1</em>");
     }
 }
