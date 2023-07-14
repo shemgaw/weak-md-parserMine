@@ -3,36 +3,36 @@ package com.github.arena.challenges.weakmdparser;
 public class MarkdownParser {
 
     String parse(String markdown) {
-        String[] lines = markdown.split("\n");
+        String[] cutLines = markdown.split("\n");
         String result = "";
-        boolean activeList = false;
+        boolean isUlTagOpened = false;
 
-        for (String line : lines) {
+        for (String cutLine : cutLines) {
 
-            String theLine = convertToHeaderTagIfPresent(line);
+            String modifiedLine = convertToHeaderTagIfPresent(cutLine);
 
-            if (theLine == null) {
-                theLine = convertToListItemTagIfPresent(line);
+            if (modifiedLine == null) {
+                modifiedLine = convertToListItemTagIfPresent(cutLine);
             }
 
-            if (theLine == null) {
-                theLine = convertToParagraphTag(line);
+            if (modifiedLine == null) {
+                modifiedLine = convertToParagraphTag(cutLine);
             }
 
-            if (theLine.matches("(<li>).*") && !theLine.matches("(<h).*") && !theLine.matches("(<p>).*") && !activeList) {
-                activeList = true;
+            if (modifiedLine.matches("(<li>).*") && !isUlTagOpened) {
+                isUlTagOpened = true;
                 result = result + "<ul>";
-                result = result + theLine;
-            } else if (!theLine.matches("(<li>).*") && activeList) {
-                activeList = false;
+                result = result + modifiedLine;
+            } else if (!modifiedLine.matches("(<li>).*") && isUlTagOpened) {
+                isUlTagOpened = false;
                 result = result + "</ul>";
-                result = result + theLine;
+                result = result + modifiedLine;
             } else {
-                result = result + theLine;
+                result = result + modifiedLine;
             }
         }
 
-        if (activeList) {
+        if (isUlTagOpened) {
             result = result + "</ul>";
         }
 
