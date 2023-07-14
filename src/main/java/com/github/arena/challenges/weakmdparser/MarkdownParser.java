@@ -4,66 +4,57 @@ public class MarkdownParser {
 
     String parse(String markdown) {
         String[] cutLines = markdown.split("\n");
-        String result = "";
+        StringBuilder finalResult = new StringBuilder();
         boolean isUlTagOpened = false;
 
         for (String cutLine : cutLines) {
 
-            String modifiedLine = convertToHeaderTagIfPresent(cutLine);
+            String modifiedLine = convertToHeaderTagIfPresent(cutLine);         //if header then no bold neither italic
 
-            if (modifiedLine == null) {
-                modifiedLine = convertToListItemTagIfPresent(cutLine);
-            }
+            if (modifiedLine.equals(cutLine)) {
+                modifiedLine = convertToListItemTagOrParagraphTag(cutLine);     //if no header, then either list or paragraph
+            }                                                                   //and bold or italic
 
-            if (modifiedLine == null) {
-                modifiedLine = convertToParagraphTag(cutLine);
-            }
-
-            if (modifiedLine.matches("(<li>).*") && !isUlTagOpened) {
+            if (modifiedLine.startsWith("<li>") && !isUlTagOpened) {
                 isUlTagOpened = true;
-                result = result + "<ul>";
-                result = result + modifiedLine;
-            } else if (!modifiedLine.matches("(<li>).*") && isUlTagOpened) {
+                finalResult.append("<ul>").append(modifiedLine);
+
+            } else if (!modifiedLine.startsWith("<li>") && isUlTagOpened) {
                 isUlTagOpened = false;
-                result = result + "</ul>";
-                result = result + modifiedLine;
+                finalResult.append("</ul>").append(modifiedLine);
+
             } else {
-                result = result + modifiedLine;
+                finalResult.append(modifiedLine);
             }
         }
 
         if (isUlTagOpened) {
-            result = result + "</ul>";
+            finalResult.append("</ul>");
         }
 
-        return result;
+        return finalResult.toString();
     }
 
     protected String convertToHeaderTagIfPresent(String markdown) {
-        int count = 0;
+        int headerSize = 0;
 
         for (int i = 0; i < markdown.length() && markdown.charAt(i) == '#'; i++) {
-            count++;
+            headerSize++;
         }
 
-        return count == 0 ? null : "<h" + count + ">" + markdown.substring(count + 1) + "</h" + count + ">";
+        return headerSize == 0 ? markdown : "<h" + headerSize + ">" + markdown.substring(headerSize + 1) + "</h" + headerSize + ">";
     }
 
-    public String convertToListItemTagIfPresent(String markdown) {
+    public String convertToListItemTagOrParagraphTag(String markdown) {
         if (markdown.startsWith("*")) {
             String skipAsterisk = markdown.substring(2);
-            String listItemString = convertToItalicAndBoldTag(skipAsterisk);
+            String listItemString = convertToItalicOrBoldTag(skipAsterisk);
             return "<li>" + listItemString + "</li>";
         }
-
-        return null;
+            return "<p>" + convertToItalicOrBoldTag(markdown) + "</p>";
     }
 
-    public String convertToParagraphTag(String markdown) {
-        return "<p>" + convertToItalicAndBoldTag(markdown) + "</p>";
-    }
-
-    public String convertToItalicAndBoldTag(String markdown) {
+    public String convertToItalicOrBoldTag(String markdown) {
 
         String boldMatchRegex = "__(.+)__";
         String italicMatchRegex = "_(.+)_";
