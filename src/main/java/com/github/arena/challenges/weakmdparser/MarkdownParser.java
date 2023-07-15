@@ -2,7 +2,7 @@ package com.github.arena.challenges.weakmdparser;
 
 public class MarkdownParser {
 
-    String parse(String markdown) {
+    public String parse(String markdown) {
         String[] cutLines = markdown.split("\n");
         StringBuilder finalResult = new StringBuilder();
         boolean isUlTagOpened = false;
@@ -35,7 +35,7 @@ public class MarkdownParser {
         return finalResult.toString();
     }
 
-    protected String convertToHeaderTagIfPresent(String markdown) {
+    private static String convertToHeaderTagIfPresent(String markdown) {
         int headerSize = 0;
 
         for (int i = 0; i < markdown.length() && markdown.charAt(i) == '#'; i++) {
@@ -45,7 +45,7 @@ public class MarkdownParser {
         return headerSize == 0 ? markdown : "<h" + headerSize + ">" + markdown.substring(headerSize + 1) + "</h" + headerSize + ">";
     }
 
-    public String convertToListItemTagOrParagraphTag(String markdown) {
+    private static String convertToListItemTagOrParagraphTag(String markdown) {
         if (markdown.startsWith("*")) {
             String skipAsterisk = markdown.substring(2);
             String listItemString = convertToItalicOrBoldTag(skipAsterisk);
@@ -54,7 +54,7 @@ public class MarkdownParser {
             return "<p>" + convertToItalicOrBoldTag(markdown) + "</p>";
     }
 
-    public String convertToItalicOrBoldTag(String markdown) {
+    private static String convertToItalicOrBoldTag(String markdown) {
 
         String boldMatchRegex = "__(.+)__";
         String italicMatchRegex = "_(.+)_";
