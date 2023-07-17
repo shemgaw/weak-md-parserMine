@@ -7,13 +7,18 @@ import java.util.stream.Stream;
 public class MarkdownParserMine {
 
     public String parse(String markdown) {
-        Stream<String> stringOfCutLines = Stream.of(markdown.split("\n"));
 
-        List<String> cutLinesList = convertToHeaderTagsIfPresent(stringOfCutLines);
+        List<String> afterHeaderTagsConversionList = convertToHeaderTagsIfPresent(markdown.lines());
 
-        List<String> beforeBoldAndItalicConversion = convertToListOrParagraphTag(cutLinesList);
+        List<String> afterBulletPointsConversionList = convertToListBulletPointTag(afterHeaderTagsConversionList);
 
-        return convertToBoldAndItalicTags(beforeBoldAndItalicConversion);
+        List<String> afterParagraphConversionList = convertToParagraphTag(afterBulletPointsConversionList);
+
+        convertToListTag(afterParagraphConversionList);
+
+        List<String> afterListTagBoldTagAndItalicTagConversionList = convertToBoldAndItalicTags(afterParagraphConversionList);
+
+        return String.join("", afterListTagBoldTagAndItalicTagConversionList);
     }
 
     private static List<String> convertToHeaderTagsIfPresent(Stream<String> streamOfCutLines) {
@@ -29,22 +34,29 @@ public class MarkdownParserMine {
                 .collect(Collectors.toList());
     }
 
-    private static List<String> convertToListOrParagraphTag(List<String> cutLinesList) {
-        List<String> listOfLines = cutLinesList.stream()
+    private static List<String> convertToListBulletPointTag(List<String> cutLinesList) {
+        return cutLinesList.stream()
                 .map(cutLine -> cutLine.replaceAll("^[*]\s", "<li>"))
                 .map(cutLine -> cutLine.startsWith("<li>") ? cutLine + "</li>" : cutLine)
+                .collect(Collectors.toList());
+    }
+
+    private static List<String> convertToParagraphTag(List<String> cutLinesList) {
+        return cutLinesList.stream()
                 .map(cutLine -> cutLine.matches("^<h[1-6]>.+|^<li>.+") ? cutLine : "<p>" + cutLine + "</p>")
                 .collect(Collectors.toList());
+    }
 
+    private static void convertToListTag(List<String> listOfLines) {
         boolean isULTagOpened = false;
 
-        for (String line : listOfLines) {
+        for (int i = 0; i < listOfLines.size(); i++) {
 
-            if (line.startsWith("<li>") && !isULTagOpened) {
-                listOfLines.set(listOfLines.indexOf(line), "<ul>" + line);
+            if (listOfLines.get(i).startsWith("<li>") && !isULTagOpened) {
+                listOfLines.set(i, "<ul>" + listOfLines.get(i));
                 isULTagOpened = true;
-            } else if (!line.startsWith("<li>") && isULTagOpened) {
-                listOfLines.set(listOfLines.indexOf(line), "</ul>" + line);
+            } else if (!listOfLines.get(i).startsWith("<li>") && isULTagOpened) {
+                listOfLines.set(i - 1, listOfLines.get(i - 1) + "</ul>");
                 isULTagOpened = false;
             }
         }
@@ -52,14 +64,12 @@ public class MarkdownParserMine {
         if (isULTagOpened) {
             listOfLines.add("</ul>");
         }
-
-        return listOfLines;
     }
 
-    private static String convertToBoldAndItalicTags(List<String> boldAndItalicToBeChanged) {
+    private static List<String> convertToBoldAndItalicTags(List<String> boldAndItalicToBeChanged) {
         return boldAndItalicToBeChanged.stream()
                 .map(cutLine -> cutLine.replaceAll("__(.+)__", "<strong>$1</strong>"))
                 .map(cutLine -> cutLine.replaceAll("_(.+)_", "<em>$1</em>"))
-                .collect(Collectors.joining());
+                .collect(Collectors.toList());
     }
 }

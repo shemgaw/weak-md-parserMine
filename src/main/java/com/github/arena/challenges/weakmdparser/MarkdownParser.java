@@ -12,10 +12,12 @@ public class MarkdownParser {
             String modifiedLine = convertToHeaderTagIfPresent(cutLine);         //if header then no bold neither italic
 
             if (modifiedLine.equals(cutLine)) {
-                modifiedLine = convertToListItemTagOrParagraphTag(cutLine);     //if no header, then either list or paragraph
+                modifiedLine = convertToBulletPointTagOrParagraphTag(cutLine);     //if no header, then either bullet point or paragraph
             }                                                                   //and bold or italic
 
-            if (modifiedLine.startsWith("<li>") && !isUlTagOpened) {
+            modifiedLine = convertToItalicOrBoldTag(modifiedLine);
+
+            if (modifiedLine.startsWith("<li>") && !isUlTagOpened) {            //we convert to list tag
                 isUlTagOpened = true;
                 finalResult.append("<ul>").append(modifiedLine);
 
@@ -45,20 +47,17 @@ public class MarkdownParser {
         return headerSize == 0 ? markdown : "<h" + headerSize + ">" + markdown.substring(headerSize + 1) + "</h" + headerSize + ">";
     }
 
-    private static String convertToListItemTagOrParagraphTag(String markdown) {
+    private static String convertToBulletPointTagOrParagraphTag(String markdown) {
         if (markdown.startsWith("*")) {
             String skipAsterisk = markdown.substring(2);
-            String listItemString = convertToItalicOrBoldTag(skipAsterisk);
-            return "<li>" + listItemString + "</li>";
+            return "<li>" + skipAsterisk + "</li>";
         }
-            return "<p>" + convertToItalicOrBoldTag(markdown) + "</p>";
+        return "<p>" + markdown + "</p>";
     }
 
     private static String convertToItalicOrBoldTag(String markdown) {
 
-        String boldMatchRegex = "__(.+)__";
-        String italicMatchRegex = "_(.+)_";
-        String converted = markdown.replaceAll(boldMatchRegex, "<strong>$1</strong>");
-        return converted.replaceAll(italicMatchRegex, "<em>$1</em>");
+        return markdown.replaceAll("__(.+)__", "<strong>$1</strong>")
+                .replaceAll("_(.+)_", "<em>$1</em>");
     }
 }
