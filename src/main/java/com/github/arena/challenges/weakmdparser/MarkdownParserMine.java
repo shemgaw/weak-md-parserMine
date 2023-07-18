@@ -8,20 +8,20 @@ public class MarkdownParserMine {
 
     public String parse(String markdown) {
 
-        List<String> afterHeaderTagsConversionList = convertToHeaderTagsIfPresent(markdown.lines());
+        var afterHeaderTagsConversionStream = convertToHeaderTag(markdown.lines());
 
-        List<String> afterBulletPointsConversionList = convertToListBulletPointTag(afterHeaderTagsConversionList);
+        var afterBulletPointsConversionStream = convertToListBulletPointTag(afterHeaderTagsConversionStream);
 
-        List<String> afterParagraphConversionList = convertToParagraphTag(afterBulletPointsConversionList);
+        var afterParagraphConversionStream = convertToParagraphTag(afterBulletPointsConversionStream);
 
-        convertToListTag(afterParagraphConversionList);
+        var afterListTagBoldTagAndItalicTagConversionStream = convertToBoldAndItalicTags(afterParagraphConversionStream);
 
-        List<String> afterListTagBoldTagAndItalicTagConversionList = convertToBoldAndItalicTags(afterParagraphConversionList);
+        var afterListConversionStream = convertToListTag(afterListTagBoldTagAndItalicTagConversionStream);
 
-        return String.join("", afterListTagBoldTagAndItalicTagConversionList);
+        return afterListConversionStream.collect(Collectors.joining());
     }
 
-    private static List<String> convertToHeaderTagsIfPresent(Stream<String> streamOfCutLines) {
+    private static Stream<String> convertToHeaderTag(Stream<String> streamOfCutLines) {
 
         return streamOfCutLines
                 .map(cutLine -> cutLine.replaceAll("^#{6}\s", "<h6>")
@@ -30,24 +30,22 @@ public class MarkdownParserMine {
                         .replaceAll("^#{3}\s", "<h3>")
                         .replaceAll("^#{2}\s", "<h2>")
                         .replaceAll("^#\s", "<h1>"))
-                .map(cutLine -> cutLine.startsWith("<h") ? cutLine + "</h" + cutLine.charAt(2) + ">" : cutLine)
-                .collect(Collectors.toList());
+                .map(cutLine -> cutLine.startsWith("<h") ? cutLine + "</h" + cutLine.charAt(2) + ">" : cutLine);
     }
 
-    private static List<String> convertToListBulletPointTag(List<String> cutLinesList) {
-        return cutLinesList.stream()
+    private static Stream<String> convertToListBulletPointTag(Stream<String> streamOfCutLines) {
+        return streamOfCutLines
                 .map(cutLine -> cutLine.replaceAll("^[*]\s", "<li>"))
-                .map(cutLine -> cutLine.startsWith("<li>") ? cutLine + "</li>" : cutLine)
-                .collect(Collectors.toList());
+                .map(cutLine -> cutLine.startsWith("<li>") ? cutLine + "</li>" : cutLine);
     }
 
-    private static List<String> convertToParagraphTag(List<String> cutLinesList) {
-        return cutLinesList.stream()
-                .map(cutLine -> cutLine.matches("^<h[1-6]>.+|^<li>.+") ? cutLine : "<p>" + cutLine + "</p>")
-                .collect(Collectors.toList());
+    private static Stream<String> convertToParagraphTag(Stream<String> streamOfCutLines) {
+        return streamOfCutLines
+                .map(cutLine -> cutLine.matches("^<h[1-6]>.+|^<li>.+") ? cutLine : "<p>" + cutLine + "</p>");
     }
 
-    private static void convertToListTag(List<String> listOfLines) {
+    private static Stream<String> convertToListTag(Stream<String> streamOfCutLines) {
+        List<String> listOfLines = streamOfCutLines.collect(Collectors.toList());
         boolean isULTagOpened = false;
 
         for (int i = 0; i < listOfLines.size(); i++) {
@@ -64,12 +62,12 @@ public class MarkdownParserMine {
         if (isULTagOpened) {
             listOfLines.add("</ul>");
         }
+        return listOfLines.stream();
     }
 
-    private static List<String> convertToBoldAndItalicTags(List<String> boldAndItalicToBeChanged) {
-        return boldAndItalicToBeChanged.stream()
-                .map(cutLine -> cutLine.replaceAll("__(.+)__", "<strong>$1</strong>"))
-                .map(cutLine -> cutLine.replaceAll("_(.+)_", "<em>$1</em>"))
-                .collect(Collectors.toList());
+    private static Stream<String> convertToBoldAndItalicTags(Stream<String> boldAndItalicToBeChanged) {
+        return boldAndItalicToBeChanged
+                .map(cutLine -> cutLine.replaceAll("__(.+)__", "<strong>$1</strong>")
+                                        .replaceAll("_(.+)_", "<em>$1</em>"));
     }
 }
